@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnTrain</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to bottom right, #fff7d6, #ffe066);
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        .language-selector {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .language-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .language-btn.active {
+            background-color: #ff4d4d;
+            color: white;
+        }
+        .question {
+            margin-bottom: 1rem;
+        }
+        .sentence {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .transcription {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .option-btn {
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .option-btn:hover {
+            background-color: #f0f0f0;
+        }
+        .feedback {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-radius: 5px;
+        }
+        .feedback.correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .feedback.incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        .progress {
+            height: 100%;
+            background-color: #ff4d4d;
+            transition: width 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>learn<span style="color: #ff4d4d;">train</span></h1>
+        <p class="subtitle">future</p>
+        <div class="language-selector" id="languageSelector"></div>
+        <div class="question" id="question"></div>
+        <div class="feedback" id="feedback" style="display: none;"></div>
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+
+    <script>
+        const languages = {
+            korean: [
+                { sentence: "안녕하세요!", transcription: "annyeonghaseyo!", options: ["Hello!", "Goodbye!"], correct: 0 },
+                { sentence: "감사합니다.", transcription: "gamsahamnida.", options: ["Thank you.", "I'm sorry."], correct: 0 },
+                { sentence: "맛있어요!", transcription: "mashisseoyo!", options: ["It's delicious!", "It's expensive!"], correct: 0 },
+                { sentence: "어디예요?", transcription: "eodiyeyo?", options: ["Where is it?", "How are you?"], correct: 0 },
+                { sentence: "화이팅!", transcription: "hwaiting!", options: ["Good luck!", "Congratulations!"], correct: 0 },
+            ],
+            french: [
+                { sentence: "Bonjour!", transcription: "bohn-zhoor!", options: ["Hello!", "Goodnight!"], correct: 0 },
+                { sentence: "Merci beaucoup.", transcription: "mehr-see boh-koo.", options: ["Thank you very much.", "You're welcome."], correct: 0 },
+                { sentence: "À votre santé!", transcription: "ah vot-ruh sahn-tay!", options: ["Cheers!", "Bless you!"], correct: 0 },
+                { sentence: "Je ne sais pas.", transcription: "zhuh nuh say pah.", options: ["I don't know.", "I don't care."], correct: 0 },
+                { sentence: "C'est la vie.", transcription: "say lah vee.", options: ["That's life.", "It's a beautiful day."], correct: 0 },
+            ],
+            hindi: [
+                { sentence: "नमस्ते!", transcription: "namaste!", options: ["Hello!", "Goodbye!"], correct: 0 },
+                { sentence: "धन्यवाद।", transcription: "dhanyavaad.", options: ["Thank you.", "Please."], correct: 0 },
+                { sentence: "माफ़ कीजिये।", transcription: "maaf keejiye.", options: ["Excuse me.", "Congratulations."], correct: 0 },
+                { sentence: "बहुत अच्छा!", transcription: "bahut achchha!", options: ["Very good!", "Very bad!"], correct: 0 },
+                { sentence: "मुझे समझ नहीं आया।", transcription: "mujhe samajh nahin aaya.", options: ["I don't understand.", "I agree."], correct: 0 },
+            ],
+        };
+
+        let currentLanguage = 'korean';
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function prepareQuestions(lang) {
+            if (lang === 'polyglot') {
+                questions = Object.values(languages).flat();
+            } else {
+                questions = languages[lang];
+            }
+            questions = shuffleArray(questions.map(q => ({
+                ...q,
+                shuffledOptions: shuffleArray([...q.options])
+            })));
+            currentQuestionIndex = 0;
+            score = 0;
+            updateProgress();
+        }
+
+        function createLanguageButtons() {
+            const languageSelector = document.getElementById('languageSelector');
+            languageSelector.innerHTML = '';
+            [...Object.keys(languages), 'polyglot'].forEach(lang => {
+                const btn = document.createElement('button');
+                btn.textContent = lang.charAt(0).toUpperCase() + lang.slice(1);
+                btn.className = 'language-btn';
+                btn.onclick = () => selectLanguage(lang);
+                languageSelector.appendChild(btn);
+            });
+        }
+
+        function selectLanguage(lang) {
+            currentLanguage = lang;
+            document.querySelectorAll('.language-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase() === lang);
+            });
+            prepareQuestions(lang);
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const questionElement = document.getElementById('question');
+            const currentQuestion = questions[currentQuestionIndex];
+            questionElement.innerHTML = `
+                <div class="sentence">${currentQuestion.sentence}</div>
+                <div class="transcription">${currentQuestion.transcription}</div>
+                <div class="options">
+                    ${currentQuestion.shuffledOptions.map((option, index) => `
+                        <button class="option-btn" onclick="checkAnswer(${index})">${option}</button>
+                    `).join('')}
+                </div>
+            `;
+            hideFeedback();
+        }
+
+        function checkAnswer(selectedIndex) {
+            const currentQuestion = questions[currentQuestionIndex];
+            const correct = currentQuestion.shuffledOptions[selectedIndex] === currentQuestion.options[currentQuestion.correct];
+            showFeedback(correct);
+            if (correct) score++;
+            updateProgress();
+            setTimeout(() => {
+                if (currentQuestionIndex < questions.length - 1) {
+                    currentQuestionIndex++;
+                    showQuestion();
+                } else {
+                    showFinalScore();
+                }
+            }, 1500);
+        }
+
+        function showFeedback(isCorrect) {
+            const feedbackElement = document.getElementById('feedback');
+            feedbackElement.textContent = isCorrect ? '🎉 Correct!' : '💡 Try again!';
+            feedbackElement.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+            feedbackElement.style.display = 'block';
+        }
+
+        function hideFeedback() {
+            document.getElementById('feedback').style.display = 'none';
+        }
+
+        function updateProgress() {
+            const progressElement = document.getElementById('progress');
+            const progress = (score / questions.length) * 100;
+            progressElement.style.width = `${progress}%`;
+        }
+
+        function showFinalScore() {
+            const questionElement = document.getElementById('question');
+            questionElement.innerHTML = `
+                <h2>Quiz Complete!</h2>
+                <p>Your score: ${score} / ${questions.length}</p>
+                <button onclick="selectLanguage('${currentLanguage}')">Play Again</button>
+            `;
+        }
+
+        // Initialize the app
+        createLanguageButtons();
+        selectLanguage('korean');
+    </script>
+</body>
+</html>
